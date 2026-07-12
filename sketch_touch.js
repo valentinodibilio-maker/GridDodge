@@ -404,7 +404,7 @@ function spawnInitialEnemies() {
 }
 
 function updateStatus(text) {
-    let status = document.getElementById('gameStatus');
+    let status = document.getElementById('gameStatus');j
     if (status) {
         status.textContent = text;
     }
