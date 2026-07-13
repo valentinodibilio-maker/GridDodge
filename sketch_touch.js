@@ -25,6 +25,7 @@ let gameWon = false;
 // --- MODIFICHE OWNER & PASSWORD ---
 let OWNER_PASSWORD = "owner2026"; // Password iniziale
 let ownerMenuOpen = false;
+let lastGearClick = 0; // Gestione del doppio clic per mobile
 
 // Opzioni Trucchi Owner
 let ownerGodMode = false;
@@ -232,14 +233,14 @@ function draw() {
         textSize(18);
         text('Evita i nemici rossi (X)', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30);
         text('Raccogli power-up (♥ ★)', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
-        
+
         fill(255, 255, 0);
         text('🏆 RECORD: ' + highScore, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 40);
-        
+
         fill(0, 255, 0);
         text('Tocca SU per iniziare!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 90);
         updateStatus('🏆 Record: ' + highScore + ' | Tocca SU per iniziare!');
-        
+
     } else if (gameWon) {
         fill(0, 255, 255);
         textSize(36);
@@ -253,7 +254,7 @@ function draw() {
         text('Punteggio Finale: ' + score, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 50);
         text('Tocca RICOMINCIA', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 100);
         updateStatus('🎉 COMPLIMENTI! Hai finito il gioco!');
-        
+
     } else if (gameOver) {
         fill(255, 0, 0);
         textSize(40);
@@ -263,19 +264,19 @@ function draw() {
         textSize(20);
         text('Score: ' + score, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 10);
         text('Level: ' + level, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 20);
-        
+
         if (score > highScore && score > 0) {
             highScore = score;
             localStorage.setItem("ertac_highscore", highScore);
         }
-        
+
         fill(255, 255, 0);
         text('🏆 Record di sempre: ' + highScore, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 50);
-        
+
         fill(0, 255, 0);
         text('Tocca RICOMINCIA', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 100);
         updateStatus('GAME OVER! Score: ' + score + ' | Record: ' + highScore);
-        
+
     } else {
         // GIOCO IN ESECUZIONE
         if (!challengePhase) {
@@ -417,27 +418,27 @@ function activateTrap() {
 function drawOwnerMenu() {
     fill(15, 15, 25, 245);
     rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    
+
     fill(0, 255, 255);
     textSize(26);
     textAlign(CENTER, TOP);
     text('🛠️ IMPOSTAZIONI PROPRIETARIO 🛠️', CANVAS_WIDTH / 2, 25);
-    
+
     drawMenuButton(75, "1. GOD MODE (Invincibilità): " + (ownerGodMode ? "ATTIVO" : "DISATTIVO"), ownerGodMode);
     drawMenuButton(125, "2. SUPER VELOCITÀ PLAYER: " + (ownerSuperSpeed ? "ATTIVO" : "DISATTIVO"), ownerSuperSpeed);
     drawMenuButton(175, "3. MAGNETE POWER-UP: " + (ownerMagnetMode ? "ATTIVO" : "DISATTIVO"), ownerMagnetMode);
     drawMenuButton(225, "🎹 TRUCCHI COMBO (SU-GIU-SX-DX): " + (comboCheatsEnabled ? "ABILITATI" : "DISABILITATI"), comboCheatsEnabled);
-    
+
     drawMenuButton(285, "💥 ONE-HIT CLEAR (Elimina nemici ora)", false);
     drawMenuButton(335, "🌀 ATTIVA SUBITO TRAPPOLA FINALE", false);
-    
+
     fill(218, 165, 32);
     rect(50, 385, CANVAS_WIDTH - 100, 35, 5);
     fill(255);
     textAlign(CENTER, CENTER);
     textSize(15);
     text('🔑 CAMBIA PASSWORD OWNER', CANVAS_WIDTH / 2, 402);
-    
+
     fill(255, 0, 0);
     rect(CANVAS_WIDTH / 2 - 100, 440, 200, 40, 5);
     fill(255);
@@ -456,21 +457,25 @@ function drawMenuButton(y, stringa, attivo) {
 }
 
 function mousePressed() {
-    // Intercettazione del tocco sull'ingranaggio in alto a destra
+    // Intercettazione del tocco sull'ingranaggio in alto a destra con DOPPIO CLIC
     if (mouseX > CANVAS_WIDTH - 60 && mouseX < CANVAS_WIDTH && mouseY > 0 && mouseY < 60) {
-        if (!ownerMenuOpen) {
-            let pass = prompt("Inserisci Password Proprietario:");
-            if (pass === OWNER_PASSWORD) {
-                ownerMenuOpen = true;
-            } else if (pass !== null) {
-                alert("Password Errata!");
+        let currentTime = millis();
+        if (currentTime - lastGearClick < 300) { // Controlla se la distanza tra due clic è inferiore a 300ms
+            if (!ownerMenuOpen) {
+                let pass = prompt("Inserisci Password Proprietario:");
+                if (pass === OWNER_PASSWORD) {
+                    ownerMenuOpen = true;
+                } else if (pass !== null) {
+                    alert("Password Errata!");
+                }
+            } else {
+                ownerMenuOpen = false;
             }
-        } else {
-            ownerMenuOpen = false;
         }
+        lastGearClick = currentTime; // Registra il tempo del clic attuale
         return;
     }
-    
+
     if (ownerMenuOpen) {
         if (mouseX > CANVAS_WIDTH / 2 - 100 && mouseX < CANVAS_WIDTH / 2 + 100 && mouseY > 440 && mouseY < 480) {
             ownerMenuOpen = false;
@@ -518,11 +523,11 @@ function checkCheatCombo(directionPressed) {
     if (!comboCheatsEnabled) return;
 
     comboSequence.push(directionPressed);
-    
+
     if (comboSequence.length > CHEAT_COMBO.length) {
         comboSequence.shift();
     }
-    
+
     let isMatchWin = true;
     for (let i = 0; i < CHEAT_COMBO.length; i++) {
         if (comboSequence[i] !== CHEAT_COMBO[i]) {
@@ -538,7 +543,7 @@ function checkCheatCombo(directionPressed) {
             break;
         }
     }
-    
+
     if (gameActive) {
         if (!cheatActivated && isMatchWin) {
             score = 10000;
