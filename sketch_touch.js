@@ -22,9 +22,10 @@ let cheatTimer = 0;
 let challengePhase = false; 
 let gameWon = false; 
 
-// --- MODIFICHE OWNER & PASSWORD ---
-let OWNER_PASSWORD = "owner2026"; // Password iniziale
+// --- OWNER & PASSWORD ---
+let OWNER_PASSWORD = "owner2026"; 
 let ownerMenuOpen = false;
+let menuJustOpened = false; // VARIABILE PER RISOLVERE IL BUG DEL DOPPIO CLICK
 
 // Opzioni Trucchi Owner
 let ownerGodMode = false;
@@ -218,7 +219,6 @@ function draw() {
     noFill();
     rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Gestione del Menu Owner disegnato SOPRA il gioco senza bloccare p5.js
     if (ownerMenuOpen) {
         drawOwnerMenu();
         return; 
@@ -277,7 +277,6 @@ function draw() {
         updateStatus('GAME OVER! Score: ' + score + ' | Record: ' + highScore);
         
     } else {
-        // GIOCO IN ESECUZIONE
         if (!challengePhase) {
             if (currentDirection.left) player.moveLeft();
             if (currentDirection.right) player.moveRight();
@@ -394,7 +393,6 @@ function draw() {
         }
     }
 
-    // Disegna l'ingranaggio sempre in primo piano nell'angolo
     noStroke();
     textSize(24);
     textAlign(RIGHT, TOP);
@@ -413,7 +411,6 @@ function activateTrap() {
     comboSequence = [];
 }
 
-// DISEGNA IL MENU DEL PROPRIETARIO INTERATTIVO
 function drawOwnerMenu() {
     fill(15, 15, 25, 245);
     rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -455,13 +452,21 @@ function drawMenuButton(y, stringa, attivo) {
     text("  " + stringa, 60, y + 17);
 }
 
+// CORREZIONE DEFINITIVA PER IL CLICK DEL MOUSE / TOCCO FANTASMA
 function mousePressed() {
-    // Intercettazione del tocco sull'ingranaggio in alto a destra
+    // Se il menu è stato appena sbloccato in questo specifico frame, saltiamo questo click fasullo
+    if (menuJustOpened) {
+        menuJustOpened = false;
+        return;
+    }
+
+    // Intercettazione del tocco sull'ingranaggio (angolo in alto a destra)
     if (mouseX > CANVAS_WIDTH - 60 && mouseX < CANVAS_WIDTH && mouseY > 0 && mouseY < 60) {
         if (!ownerMenuOpen) {
             let pass = prompt("Inserisci Password Proprietario:");
             if (pass === OWNER_PASSWORD) {
                 ownerMenuOpen = true;
+                menuJustOpened = true; // Blocca la chiusura immediata nel frame corrente
             } else if (pass !== null) {
                 alert("Password Errata!");
             }
@@ -472,25 +477,32 @@ function mousePressed() {
     }
     
     if (ownerMenuOpen) {
+        // Bottone Chiudi
         if (mouseX > CANVAS_WIDTH / 2 - 100 && mouseX < CANVAS_WIDTH / 2 + 100 && mouseY > 440 && mouseY < 480) {
             ownerMenuOpen = false;
         }
+        // Trucco 1: God Mode
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 75 && mouseY < 110) {
             ownerGodMode = !ownerGodMode;
         }
+        // Trucco 2: Super Velocità
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 125 && mouseY < 160) {
             ownerSuperSpeed = !ownerSuperSpeed;
         }
+        // Trucco 3: Magnete
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 175 && mouseY < 210) {
             ownerMagnetMode = !ownerMagnetMode;
         }
+        // Abilita/Disabilita Combo Cheats
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 225 && mouseY < 260) {
             comboCheatsEnabled = !comboCheatsEnabled;
         }
+        // Trucco 4: One-Hit Clear
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 285 && mouseY < 320) {
             enemies = [];
             ownerMenuOpen = false;
         }
+        // Trucco 5: Attiva Trappola Istantanea
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 335 && mouseY < 370) {
             if (gameActive) {
                 cheatActivated = true;
@@ -498,6 +510,7 @@ function mousePressed() {
             }
             ownerMenuOpen = false;
         }
+        // Cambia Password
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 385 && mouseY < 420) {
             let newPass = prompt("Inserisci la nuova Password Owner:");
             if (newPass !== null && newPass.trim() !== "") {
@@ -650,12 +663,4 @@ function activateShield() {
 }
 
 function updateStatus(text) {
-    let status = document.getElementById('gameStatus');
-    if (status) {
-        status.textContent = text;
-    }
-}
-
-document.addEventListener('touchmove', function(e) {
-    e.preventDefault();
-}, { passive: false });
+    let status = document.getElementByI
