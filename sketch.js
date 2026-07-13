@@ -12,8 +12,8 @@ let gameStarted = false;
 let shieldActive = false;
 let shieldTimer = 0;
 let shieldCooldown = 0;
-const SHIELD_DURATION = 180; // 3 secondi a 60fps
-const SHIELD_COOLDOWN_TIME = 600; // 10 secondi di ricarica
+const SHIELD_DURATION = 180; 
+const SHIELD_COOLDOWN_TIME = 600; 
 
 // --- OWNER MENU & TRUCCHI ---
 let showAdminMenu = false;
@@ -21,17 +21,20 @@ let passwordCorrect = false;
 let godMode = false;
 let magnetMode = false;
 let superSpeed = false;
-const ADMIN_PASSWORD = "admin"; // Puoi cambiare la password qui
+let comboEnabled = false; // Attiva/disattiva la possibilità di fare la combo
+const ADMIN_PASSWORD = "admin"; 
+
+// --- GESTIONE COMBINAZIONE SEGRETA ---
+let secretSequence = [];
+const REQUIRED_SEQUENCE = ["UP", "DOWN", "LEFT", "RIGHT"]; // SU, GIU, SX, DX
 
 // --- VARIABILI DI MOVIMENTO (per i pulsanti HTML) ---
 let moveDir = "";
 
 function setup() {
-  // RIGA FONDAMENTALE PER GITHUB PAGES: si aggancia al div HTML
   let canvas = createCanvas(400, 450);
   canvas.parent('p5-container');
   
-  // Carica il record locale se esiste
   if (localStorage.getItem("gridDodgeHighScore")) {
     highScore = parseInt(localStorage.getItem("gridDodgeHighScore"));
   }
@@ -42,7 +45,6 @@ function setup() {
 function draw() {
   background(20);
   
-  // Disegna l'interfaccia di stato superiore
   drawUI();
 
   if (!gameStarted) {
@@ -56,24 +58,21 @@ function draw() {
   }
 
   // --- LOGICA DI GIOCO ATTIVA ---
-  
-  // Gestione trucchi e movimenti
   let currentSpeed = superSpeed ? 8 : 4;
   handleHTMLControls(currentSpeed);
 
-  // Aggiorna e mostra il giocatore
   player.update();
   player.display();
 
-  // Gestione Scudo
   if (shieldActive) {
     shieldTimer--;
     if (shieldTimer <= 0) shieldActive = false;
   }
   if (shieldCooldown > 0) shieldCooldown--;
 
-  // Generazione progressiva nemici e power-up
-  if (frameCount % max(10, 40 - floor(score / 5)) === 0) {
+  // Generazione nemici basata sul punteggio (più punti hai, più è infernale!)
+  let spawnRate = max(5, 40 - floor(score / 10));
+  if (frameCount % spawnRate === 0) {
     enemies.push(new Enemy());
   }
   if (frameCount % 120 === 0) {
@@ -85,14 +84,12 @@ function draw() {
     enemies[i].update();
     enemies[i].display();
 
-    // Collisione con lo scudo attivo
     if (shieldActive && player.intersects(enemies[i])) {
       enemies.splice(i, 1);
       score += 2;
       continue;
     }
 
-    // Collisione con il giocatore
     if (player.intersects(enemies[i])) {
       if (!godMode && !shieldActive) {
         lives--;
@@ -105,7 +102,6 @@ function draw() {
       continue;
     }
 
-    // Rimuovi nemici fuori schermo
     if (enemies[i].y > height) {
       enemies.splice(i, 1);
       score++;
@@ -138,15 +134,41 @@ function draw() {
     }
   }
 
-  // Mostra il menu di amministrazione se attivo
   if (showAdminMenu) {
     drawAdminOverlay();
   }
 }
 
-// --- FUNZIONI DI SUPPORTO DI INTERFACCIA ---
+// --- CONTROLLO DELLA COMBO DI TASTI ---
+function checkCheatCombo(direction) {
+  if (!comboEnabled || gameOver) return;
+
+  // Aggiunge la direzione premuta alla sequenza attuale
+  secretSequence.push(direction);
+
+  // Tiene solo gli ultimi 4 tasti premuti
+  if (secretSequence.length > REQUIRED_SEQUENCE.length) {
+    secretSequence.shift();
+  }
+
+  // Verifica se la sequenza coincide con SU, GIU, SX, DX
+  let isMatch = true;
+  for (let i = 0; i < REQUIRED_SEQUENCE.length; i++) {
+    if (secretSequence[i] !== REQUIRED_SEQUENCE[i]) {
+      isMatch = false;
+      break;
+    }
+  }
+
+  if (isMatch) {
+    score = 10000; // Teletrasporto a livello / punteggio 10.000!
+    secretSequence = []; // Svuota la sequenza
+    document.getElementById("gameStatus").innerText = "⚡ TELETRASPORTO: LIVELLO 10.000! ⚡";
+  }
+}
+
+// --- INTERFACCIA GRAFICA (UI) ---
 function drawUI() {
-  // Barra dei punteggi superiore
   fill(0, 255, 0);
   textSize(16);
   textAlign(LEFT, TOP);
@@ -154,7 +176,7 @@ function drawUI() {
   textAlign(RIGHT, TOP);
   text("RECORD: " + highScore, width - 50, 15);
 
-  // Disegna l'ingranaggio del menu segreto in alto a destra
+  // Ingranaggio
   push();
   stroke(0, 255, 0);
   strokeWeight(2);
@@ -167,13 +189,10 @@ function drawUI() {
   ellipse(0, 0, 12, 12);
   pop();
 
-  // Visualizzazione cuori della vita
-  textAlign(LEFT, TOP);
   let heartStr = "";
   for (let i = 0; i < lives; i++) heartStr += "❤️";
   text(heartStr, 15, 40);
 
-  // Indicatore Scudo Disponibile / In Ricarica
   if (shieldActive) {
     fill(0, 191, 255);
     text("🛡️ ATTIVO", 15, 65);
@@ -185,8 +204,7 @@ function drawUI() {
     text("🛡️ PRONTO", 15, 65);
   }
   
-  // Scritta Trucchi Attivi
-  if (godMode || magnetMode || superSpeed) {
+  if (godMode || magnetMode || superSpeed || comboEnabled) {
     fill(255, 0, 255);
     textAlign(CENTER, TOP);
     text("⚡ TRUCCHI ATTIVI ⚡", width / 2, 40);
@@ -197,7 +215,7 @@ function drawStartScreen() {
   textAlign(CENTER, CENTER);
   fill(0, 255, 0);
   textSize(24);
-  text("DODGE MASTERS", width / 2, height / 2 - 20);
+  text("GRID DODGE", width / 2, height / 2 - 20);
   textSize(16);
   fill(255);
   text("Usa i tasti sotto per muoverti\ne attivare lo scudo.", width / 2, height / 2 + 20);
@@ -219,29 +237,33 @@ function drawAdminOverlay() {
   fill(0, 255, 0);
   textAlign(CENTER, TOP);
   textSize(20);
-  text("⚙️ OWNER PANEL ⚙️", width / 2, 80);
+  text("⚙️ OWNER PANEL ⚙️", width / 2, 60);
 
   if (!passwordCorrect) {
     textSize(14);
     fill(255);
     text("Pannello protetto.\nClicca qui per inserire la password.", width / 2, height / 2 - 20);
   } else {
-    textSize(16);
+    textSize(15);
     fill(godMode ? 255 : 100, godMode ? 0 : 255, godMode ? 255 : 100);
-    text("[1] GOD MODE: " + (godMode ? "ON" : "OFF"), width / 2, 160);
+    text("[1] GOD MODE: " + (godMode ? "ON" : "OFF"), width / 2, 130);
+    
     fill(magnetMode ? 255 : 100, magnetMode ? 0 : 255, magnetMode ? 255 : 100);
-    text("[2] MAGNETE: " + (magnetMode ? "ON" : "OFF"), width / 2, 210);
+    text("[2] MAGNETE: " + (magnetMode ? "ON" : "OFF"), width / 2, 180);
+    
     fill(superSpeed ? 255 : 100, superSpeed ? 0 : 255, superSpeed ? 255 : 100);
-    text("[3] SUPER VELOCITÀ: " + (superSpeed ? "ON" : "OFF"), width / 2, 260);
+    text("[3] SUPER VELOCITÀ: " + (superSpeed ? "ON" : "OFF"), width / 2, 230);
+    
+    // NUOVO PULSANTE PER ABILITARE LA COMBO
+    fill(comboEnabled ? 0: 255, comboEnabled ? 255 : 255, comboEnabled ? 255 : 100);
+    text("[4] COMBO 10k: " + (comboEnabled ? "PRONTA (SU->GIU->SX->DX)" : "DISATTIVATA"), width / 2, 280);
     
     fill(255, 100, 100);
-    text("Clicca sullo schermo per uscire", width / 2, height - 80);
+    text("Clicca in fondo per uscire", width / 2, height - 60);
   }
 }
 
-// --- LOGICA DEL CLICK SUL CANVAS (Menu Segreto & Trucchi) ---
 function mousePressed() {
-  // Verifica se viene cliccata la zona dell'ingranaggio in alto a destra
   if (mouseX > width - 40 && mouseX < width && mouseY > 0 && mouseY < 50) {
     showAdminMenu = !showAdminMenu;
     return;
@@ -252,23 +274,18 @@ function mousePressed() {
       let pwd = prompt("Inserisci la Password Amministratore:");
       if (pwd === ADMIN_PASSWORD) {
         passwordCorrect = true;
-        alert("Accesso eseguito, Benvenuto Proprietario!");
-      } else if (pwd !== null) {
-        alert("Password errata!");
       }
     } else {
-      // Seleziona i trucchi cliccando sulle varie altezze dello schermo
-      if (mouseY > 140 && mouseY < 180) godMode = !godMode;
-      if (mouseY > 190 && mouseY < 230) magnetMode = !magnetMode;
-      if (mouseY > 240 && mouseY < 280) superSpeed = !superSpeed;
+      if (mouseY > 110 && mouseY < 150) godMode = !godMode;
+      if (mouseY > 160 && mouseY < 200) magnetMode = !magnetMode;
+      if (mouseY > 210 && mouseY < 250) superSpeed = !superSpeed;
+      if (mouseY > 260 && mouseY < 300) comboEnabled = !comboEnabled; // Interruttore combo
       
-      // Cliccando in fondo si esce
-      if (mouseY > height - 100) showAdminMenu = false;
+      if (mouseY > height - 80) showAdminMenu = false;
     }
   }
 }
 
-// --- CONTROLLI HTML INPUT ---
 function handleHTMLControls(speed) {
   if (moveDir === "UP") player.y = max(80, player.y - speed);
   if (moveDir === "DOWN") player.y = min(height - 20, player.y + speed);
@@ -276,11 +293,12 @@ function handleHTMLControls(speed) {
   if (moveDir === "RIGHT") player.x = min(width - 20, player.x + speed);
 }
 
-// Interfacce collegate ai bottoni dell'HTML
-function moveUp() { if(!gameStarted) gameStarted = true; moveDir = "UP"; }
-function moveDown() { moveDir = "DOWN"; }
-function moveLeft() { moveDir = "LEFT"; }
-function moveRight() { moveDir = "RIGHT"; }
+// Bottoni HTML + Tracciamento combo
+function moveUp() { if(!gameStarted) gameStarted = true; moveDir = "UP"; checkCheatCombo("UP"); }
+// Nota: Registra la combo solo quando premi inizialmente il tasto
+function moveDown() { moveDir = "DOWN"; checkCheatCombo("DOWN"); }
+function moveLeft() { moveDir = "LEFT"; checkCheatCombo("LEFT"); }
+function moveRight() { moveDir = "RIGHT"; checkCheatCombo("RIGHT"); }
 function stopMove() { moveDir = ""; }
 
 function activateShield() {
@@ -288,12 +306,9 @@ function activateShield() {
   shieldActive = true;
   shieldTimer = SHIELD_DURATION;
   shieldCooldown = SHIELD_COOLDOWN_TIME;
-  document.getElementById("gameStatus").innerText = "Scudo attivazione temporanea!";
 }
 
-function restartGame() {
-  resetGame();
-}
+function restartGame() { resetGame(); }
 function doNothing() {}
 
 function resetGame() {
@@ -306,6 +321,7 @@ function resetGame() {
   shieldTimer = 0;
   shieldCooldown = 0;
   gameOver = false;
+  secretSequence = []; 
   document.getElementById("gameStatus").innerText = "Gioco pronto! Schiva tutto!";
 }
 
@@ -318,13 +334,9 @@ function endGame() {
   }
 }
 
-// --- CLASSI DEL GIOCO (Player, Enemy, PowerUp) ---
+// --- CLASSI ORIGINALI ---
 class Player {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-    this.r = 15;
-  }
+  constructor(x, y) { this.x = x; this.y = y; this.r = 15; }
   update() {
     this.x = constrain(this.x, this.r, width - this.r);
     this.y = constrain(this.y, 80 + this.r, height - this.r);
@@ -354,17 +366,11 @@ class Enemy {
     this.x = random(20, width - 20);
     this.y = 50;
     this.r = random(10, 18);
-    this.speed = random(2, 5) + (score * 0.05); // Aumenta con i punti
+    this.speed = random(2, 5) + (score * 0.03); // Velocità scalata per gestire i 10.000 punti!
   }
-  update() {
-    this.y += this.speed;
-  }
+  update() { this.y += this.speed; }
   display() {
-    push();
-    fill(255, 50, 50);
-    noStroke();
-    ellipse(this.x, this.y, this.r * 2);
-    pop();
+    push(); fill(255, 50, 50); noStroke(); ellipse(this.x, this.y, this.r * 2); pop();
   }
 }
 
@@ -376,18 +382,4 @@ class PowerUp {
     this.type = random(1) > 0.75 ? "HEART" : "STAR";
     this.speed = 2;
   }
-  update() {
-    this.y += this.speed;
-  }
-  attractTo(tx, ty) {
-    this.x = lerp(this.x, tx, 0.05);
-    this.y = lerp(this.y, ty, 0.05);
-  }
-  display() {
-    push();
-    textAlign(CENTER, CENTER);
-    textSize(this.r * 2);
-    text(this.type === "HEART" ? "❤️" : "⭐", this.x, this.y);
-    pop();
-  }
-}
+  update() { this.y += this.speed
