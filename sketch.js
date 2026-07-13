@@ -21,7 +21,7 @@ let passwordCorrect = false;
 let godMode = false;
 let magnetMode = false;
 let superSpeed = false;
-const ADMIN_PASSWORD = "admin"; // <--- LA PASSWORD È QUESTA: admin
+const ADMIN_PASSWORD = "admin"; 
 
 // --- VARIABILI DI MOVIMENTO ---
 let moveDir = "";
@@ -134,47 +134,55 @@ function draw() {
   }
 }
 
-// --- INTERFACCIA GRAFICA (UI) ---
+// --- INTERFACCIA GRAFICA CORRETTA (UI) ---
 function drawUI() {
+  // Punti e Record
   fill(0, 255, 0);
-  textSize(16);
+  textSize(14);
   textAlign(LEFT, TOP);
-  text("PUNTI: " + score, 15, 15);
+  text("PUNTI: " + score, 15, 20);
   textAlign(RIGHT, TOP);
-  text("RECORD: " + highScore, width - 50, 15);
+  text("RECORD: " + highScore, width - 50, 20);
 
   // Ingranaggio segreto
   push();
   stroke(0, 255, 0);
   strokeWeight(2);
   noFill();
-  translate(width - 25, 23);
+  translate(width - 20, 28);
   for (let i = 0; i < 8; i++) {
     rotate(PI / 4);
-    line(0, 0, 10, 0);
+    line(0, 0, 8, 0);
   }
-  ellipse(0, 0, 12, 12);
+  ellipse(0, 0, 10, 10);
   pop();
 
+  // Cuori della vita spostati più in basso per evitare sovrapposizioni
+  textAlign(LEFT, TOP);
   let heartStr = "";
   for (let i = 0; i < lives; i++) heartStr += "❤️";
-  text(heartStr, 15, 40);
+  textSize(16); 
+  text(heartStr, 15, 45);
 
+  // Stato dello Scudo allineato correttamente sotto i cuori
+  textSize(14);
   if (shieldActive) {
     fill(0, 191, 255);
-    text("🛡️ ATTIVO", 15, 65);
+    text("🛡️ SCUDO: ATTIVO", 15, 75);
   } else if (shieldCooldown > 0) {
     fill(255, 100, 100);
-    text("⏳ RICARICA: " + ceil(shieldCooldown / 60) + "s", 15, 65);
+    text("⏳ RICARICA: " + ceil(shieldCooldown / 60) + "s", 15, 75);
   } else {
     fill(255, 255, 0);
-    text("🛡️ PRONTO", 15, 65);
+    text("🛡️ SCUDO: PRONTO", 15, 75);
   }
   
+  // Scritta Trucchi se attivi
   if (godMode || magnetMode || superSpeed) {
     fill(255, 0, 255);
     textAlign(CENTER, TOP);
-    text("⚡ TRUCCHI ATTIVI ⚡", width / 2, 40);
+    textSize(12);
+    text("⚡ TRUCCHI ATTIVI ⚡", width / 2, 45);
   }
 }
 
@@ -221,7 +229,6 @@ function drawAdminOverlay() {
     fill(superSpeed ? 255 : 100, superSpeed ? 0 : 255, superSpeed ? 255 : 100);
     text("[3] SUPER VELOCITÀ: " + (superSpeed ? "ON" : "OFF"), width / 2, 230);
     
-    // NUOVO PULSANTE DIRETTO PER IL TELETRASPORTO
     fill(255, 255, 0);
     text("[⚡] TELETRASPORTO LIVELLO 10.000", width / 2, 280);
     
@@ -247,10 +254,9 @@ function mousePressed() {
       if (mouseY > 160 && mouseY < 200) magnetMode = !magnetMode;
       if (mouseY > 210 && mouseY < 250) superSpeed = !superSpeed;
       
-      // Se clicchi sulla riga del teletrasporto attiva subito il trucco!
       if (mouseY > 260 && mouseY < 300) {
         score = 10000;
-        showAdminMenu = false; // Chiude il menu così vedi subito il livello 10k!
+        showAdminMenu = false; 
         if(!gameStarted) gameStarted = true;
         document.getElementById("gameStatus").innerText = "⚡ LIVELLO 10.000 ATTIVATO! ⚡";
       }
@@ -261,7 +267,7 @@ function mousePressed() {
 }
 
 function handleHTMLControls(speed) {
-  if (moveDir === "UP") player.y = max(80, player.y - speed);
+  if (moveDir === "UP") player.y = max(110, player.y - speed); // Alzato il limite per non coprire l'UI
   if (moveDir === "DOWN") player.y = min(height - 20, player.y + speed);
   if (moveDir === "LEFT") player.x = max(20, player.x - speed);
   if (moveDir === "RIGHT") player.x = min(width - 20, player.x + speed);
@@ -310,7 +316,7 @@ class Player {
   constructor(x, y) { this.x = x; this.y = y; this.r = 15; }
   update() {
     this.x = constrain(this.x, this.r, width - this.r);
-    this.y = constrain(this.y, 80 + this.r, height - this.r);
+    this.y = constrain(this.y, 110 + this.r, height - this.r);
   }
   display() {
     push();
@@ -335,7 +341,7 @@ class Player {
 class Enemy {
   constructor() {
     this.x = random(20, width - 20);
-    this.y = 50;
+    this.y = 100;
     this.r = random(10, 18);
     this.speed = random(2, 5) + (score * 0.03); 
   }
@@ -348,7 +354,7 @@ class Enemy {
 class PowerUp {
   constructor() {
     this.x = random(20, width - 20);
-    this.y = 50;
+    this.y = 100;
     this.r = 12;
     this.type = random(1) > 0.75 ? "HEART" : "STAR";
     this.speed = 2;
