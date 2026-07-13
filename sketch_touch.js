@@ -22,11 +22,9 @@ let cheatTimer = 0;
 let challengePhase = false; 
 let gameWon = false; 
 
-// --- OWNER SENZA PROMPT ---
+// --- MODIFICHE OWNER & PASSWORD ---
+let OWNER_PASSWORD = "owner2026"; // Password iniziale
 let ownerMenuOpen = false;
-let insertModeActive = false; 
-let passwordSequence = [];
-let OWNER_PASS_CODE = ["SU", "SU", "GIU", "GIU"]; 
 
 // Opzioni Trucchi Owner
 let ownerGodMode = false;
@@ -75,7 +73,8 @@ class Player {
 
         fill(0);
         textSize(14);
-        text('🎮', this.x - 7, this.y + 5);
+        textAlign(CENTER, CENTER);
+        text('@', this.x, this.y);
     }
 
     moveLeft() {
@@ -136,8 +135,8 @@ class Enemy {
     display() {
         fill(255, 0, 0);
         square(this.x - this.size / 2, this.y - this.size / 2, this.size);
-        fill(255);
-        textSize(12);
+        fill(0);
+        textSize(14);
         textAlign(CENTER, CENTER);
         text('X', this.x, this.y);
     }
@@ -198,6 +197,10 @@ function setup() {
     let canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
     canvas.parent(container);
 
+    document.body.addEventListener('touchmove', function(e) {
+        e.preventDefault();
+    }, { passive: false });
+
     let savedHighScore = localStorage.getItem("ertac_highscore");
     if (savedHighScore !== null) {
         highScore = parseInt(savedHighScore);
@@ -215,15 +218,9 @@ function draw() {
     noFill();
     rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    if (insertModeActive) {
-        drawInsertPasswordScreen();
-        drawSettingsIcon();
-        return;
-    }
-
+    // Gestione del Menu Owner disegnato SOPRA il gioco senza bloccare p5.js
     if (ownerMenuOpen) {
         drawOwnerMenu();
-        drawSettingsIcon();
         return; 
     }
 
@@ -280,6 +277,7 @@ function draw() {
         updateStatus('GAME OVER! Score: ' + score + ' | Record: ' + highScore);
         
     } else {
+        // GIOCO IN ESECUZIONE
         if (!challengePhase) {
             if (currentDirection.left) player.moveLeft();
             if (currentDirection.right) player.moveRight();
@@ -377,7 +375,7 @@ function draw() {
             if (frameCount % 30 < 15) { 
                 text('⚠️ INSERISCI CODICE FINALE! ⚠️', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 40);
             }
-            updateStatus('🚨 INSERISCI IL CODICE CON I PULSANTI VERDI PER VINCERE!');
+            updateStatus('🚨 INSERISCI IL CODICE: Uguale per VINCERE, o SX-DX-SX-DX per MODALITÀ INFINITA!');
         } else if (cheatActivated) {
             let secondsLeft = ceil(cheatTimer / 60);
             fill(255, 100, 0);
@@ -396,12 +394,9 @@ function draw() {
         }
     }
 
-    drawSettingsIcon();
-}
-
-function drawSettingsIcon() {
+    // Disegna l'ingranaggio sempre in primo piano nell'angolo
     noStroke();
-    textSize(26);
+    textSize(24);
     textAlign(RIGHT, TOP);
     fill(255);
     text('⚙️', CANVAS_WIDTH - 15, 15);
@@ -418,38 +413,9 @@ function activateTrap() {
     comboSequence = [];
 }
 
-function drawInsertPasswordScreen() {
-    fill(20, 20, 40, 250);
-    rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    
-    fill(0, 255, 255);
-    textSize(24);
-    textAlign(CENTER, TOP);
-    text('🔑 ACCESSO SICURO PROPRIETARIO', CANVAS_WIDTH / 2, 50);
-    
-    fill(200);
-    textSize(16);
-    text('Usa i tasti direzionali verdi per inserire la sequenza.', CANVAS_WIDTH / 2, 110);
-    text('Codice di default: SU, SU, GIU, GIU', CANVAS_WIDTH / 2, 140);
-    
-    textSize(28);
-    let asterischi = "";
-    for(let i=0; i<passwordSequence.length; i++) {
-        asterischi += "🔴 ";
-    }
-    if(passwordSequence.length === 0) asterischi = "(Premi i pulsanti verdi...)";
-    fill(255, 255, 0);
-    text(asterischi, CANVAS_WIDTH / 2, 210);
-
-    fill(100, 50, 50);
-    rect(CANVAS_WIDTH / 2 - 80, 320, 160, 40, 5);
-    fill(255);
-    textSize(16);
-    text('Annulla', CANVAS_WIDTH / 2, 345);
-}
-
+// DISEGNA IL MENU DEL PROPRIETARIO INTERATTIVO
 function drawOwnerMenu() {
-    fill(15, 15, 25, 250);
+    fill(15, 15, 25, 245);
     rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
     fill(0, 255, 255);
@@ -469,8 +435,8 @@ function drawOwnerMenu() {
     rect(50, 385, CANVAS_WIDTH - 100, 35, 5);
     fill(255);
     textAlign(CENTER, CENTER);
-    textSize(14);
-    text('🔑 REIMPOSTA PASSWORD OWNER A DEFAULT', CANVAS_WIDTH / 2, 402);
+    textSize(15);
+    text('🔑 CAMBIA PASSWORD OWNER', CANVAS_WIDTH / 2, 402);
     
     fill(255, 0, 0);
     rect(CANVAS_WIDTH / 2 - 100, 440, 200, 40, 5);
@@ -490,24 +456,21 @@ function drawMenuButton(y, stringa, attivo) {
 }
 
 function mousePressed() {
+    // Intercettazione del tocco sull'ingranaggio in alto a destra
     if (mouseX > CANVAS_WIDTH - 60 && mouseX < CANVAS_WIDTH && mouseY > 0 && mouseY < 60) {
-        if (!ownerMenuOpen && !insertModeActive) {
-            insertModeActive = true;
-            passwordSequence = []; 
+        if (!ownerMenuOpen) {
+            let pass = prompt("Inserisci Password Proprietario:");
+            if (pass === OWNER_PASSWORD) {
+                ownerMenuOpen = true;
+            } else if (pass !== null) {
+                alert("Password Errata!");
+            }
         } else {
             ownerMenuOpen = false;
-            insertModeActive = false;
         }
         return;
     }
     
-    if (insertModeActive) {
-        if (mouseX > CANVAS_WIDTH / 2 - 80 && mouseX < CANVAS_WIDTH / 2 + 80 && mouseY > 320 && mouseY < 360) {
-            insertModeActive = false;
-        }
-        return;
-    }
-
     if (ownerMenuOpen) {
         if (mouseX > CANVAS_WIDTH / 2 - 100 && mouseX < CANVAS_WIDTH / 2 + 100 && mouseY > 440 && mouseY < 480) {
             ownerMenuOpen = false;
@@ -536,42 +499,21 @@ function mousePressed() {
             ownerMenuOpen = false;
         }
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 385 && mouseY < 420) {
-            OWNER_PASS_CODE = ["SU", "SU", "GIU", "GIU"];
-            updateStatus("Password resettata a: SU SU GIU GIU");
-        }
-    }
-}
-
-function handleOwnerPasswordInput(direction) {
-    if (!insertModeActive) return false;
-
-    passwordSequence.push(direction);
-
-    if (passwordSequence.length === OWNER_PASS_CODE.length) {
-        let valid = true;
-        for (let i = 0; i < OWNER_PASS_CODE.length; i++) {
-            if (passwordSequence[i] !== OWNER_PASS_CODE[i]) {
-                valid = false;
+            let newPass = prompt("Inserisci la nuova Password Owner:");
+            if (newPass !== null && newPass.trim() !== "") {
+                OWNER_PASSWORD = newPass.trim();
+                alert("Password aggiornata con successo!");
+            } else {
+                alert("Password non valida.");
             }
         }
-        
-        if (valid) {
-            insertModeActive = false;
-            ownerMenuOpen = true; 
-        } else {
-            passwordSequence = []; 
-            updateStatus("❌ Sequenza errata! Riprova.");
-        }
     }
-    return true; 
 }
 
 function checkCheatCombo(directionPressed) {
     if (directionPressed !== "RESET") {
         resetRecordClicks = 0;
     }
-
-    if (handleOwnerPasswordInput(directionPressed)) return;
 
     if (!comboCheatsEnabled) return;
 
@@ -631,30 +573,89 @@ function checkCheatCombo(directionPressed) {
 
 function moveUp() {
     checkCheatCombo("SU");
-    if (!gameActive && !gameOver && !gameWon && !insertModeActive && !ownerMenuOpen) {
+    if (!gameActive && !gameOver && !gameWon) {
         gameActive = true;
         currentDirection.up = false;
-    } else if (gameActive && !challengePhase && !insertModeActive && !ownerMenuOpen) {
+    } else if (gameActive && !challengePhase) {
         currentDirection.up = true;
     }
 }
 
 function moveDown() {
     checkCheatCombo("GIU");
-    if (gameActive && !challengePhase && !insertModeActive && !ownerMenuOpen) {
+    if (gameActive && !challengePhase) {
         currentDirection.down = true;
     }
 }
 
 function moveLeft() {
     checkCheatCombo("SX");
-    if (gameActive && !challengePhase && !insertModeActive && !ownerMenuOpen) {
+    if (gameActive && !challengePhase) {
         currentDirection.left = true;
     }
 }
 
 function moveRight() {
     checkCheatCombo("DX");
-    if (gameActive && !challengePhase && !insertModeActive && !ownerMenuOpen) {
+    if (gameActive && !challengePhase) {
         currentDirection.right = true;
-    
+    }
+}
+
+function stopMove() {
+    currentDirection = { up: false, down: false, left: false, right: false };
+}
+
+function doNothing() {
+    resetRecordClicks++;
+    if (resetRecordClicks >= 3) {
+        highScore = 0;
+        localStorage.setItem("ertac_highscore", 0);
+        resetRecordClicks = 0;
+        updateStatus("♻️ RECORD AZZERATO CON SUCCESSO! ♻️");
+    }
+}
+
+function restartGame() {
+    resetGame();
+}
+
+function resetGame() {
+    player = new Player();
+    enemies = [];
+    powerups = [];
+    score = 0;
+    level = 1;
+    gameActive = true;
+    gameOver = false;
+    gameWon = false;
+    cheatActivated = false;
+    cheatTimer = 0;
+    challengePhase = false;
+    comboSequence = [];
+    resetRecordClicks = 0;
+    spawnInitialEnemies();
+}
+
+function spawnInitialEnemies() {
+    for (let i = 0; i < 4; i++) {
+        enemies.push(new Enemy());
+    }
+}
+
+function activateShield() {
+    if (gameActive && !challengePhase) {
+        player.activateShield();
+    }
+}
+
+function updateStatus(text) {
+    let status = document.getElementById('gameStatus');
+    if (status) {
+        status.textContent = text;
+    }
+}
+
+document.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+}, { passive: false });
