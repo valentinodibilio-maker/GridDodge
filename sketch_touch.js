@@ -22,15 +22,15 @@ let cheatTimer = 0;
 let challengePhase = false; 
 let gameWon = false; 
 
-// --- MODIFICHE OWNER & PASSWORD ---
-let OWNER_PASSWORD = "owner2026"; // Password iniziale
+// --- NOVITÀ: IMPOSTAZIONI OWNER & COOLDOWN SCUDO ---
+const OWNER_PASSWORD = "owner2026"; // La tua password segreta
 let ownerMenuOpen = false;
+let ownerAuthenticated = false;
 
 // Opzioni Trucchi Owner
 let ownerGodMode = false;
 let ownerSuperSpeed = false;
 let ownerMagnetMode = false;
-let comboCheatsEnabled = true; 
 
 // Costanti Dimensioni
 const PLAYER_SIZE = 30;
@@ -52,7 +52,7 @@ class Player {
         this.speed = 5;
         this.shieldActive = false;
         this.shieldTime = 0;
-        this.shieldCooldown = 0; 
+        this.shieldCooldown = 0; // Cooldown in fotogrammi (480 = 8 secondi a 60fps)
     }
 
     display() {
@@ -64,6 +64,7 @@ class Player {
             noStroke();
         }
 
+        // Se God Mode è attivo, il player diventa dorato/arcobaleno
         if (ownerGodMode) {
             fill(255, 215, 0);
         } else {
@@ -98,9 +99,10 @@ class Player {
     }
 
     activateShield() {
+        // Può attivarlo solo se non è già attivo e se il cooldown è a 0
         if (!this.shieldActive && this.shieldCooldown <= 0) {
             this.shieldActive = true;
-            this.shieldTime = 300; 
+            this.shieldTime = 300; // 5 secondi di durata
         }
     }
 
@@ -109,7 +111,7 @@ class Player {
             this.shieldTime--;
             if (this.shieldTime <= 0) {
                 this.shieldActive = false;
-                this.shieldCooldown = 480; 
+                this.shieldCooldown = 480; // Finito lo scudo, parte il cooldown di 8 secondi
             }
         } else if (this.shieldCooldown > 0) {
             this.shieldCooldown--;
@@ -178,6 +180,7 @@ class PowerUp {
     }
 
     update() {
+        // Magnete Owner: attira i powerup al giocatore
         if (ownerMagnetMode && gameActive) {
             let angle = atan2(player.y - this.y, player.x - this.x);
             this.x += cos(angle) * 4;
@@ -218,10 +221,15 @@ function draw() {
     noFill();
     rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // Gestione del Menu Owner disegnato SOPRA il gioco senza bloccare p5.js
+    // Disegna l'icona delle Impostazioni Owner (Ingranaggio) in alto a destra
+    noStroke();
+    textSize(24);
+    textAlign(RIGHT, TOP);
+    text('⚙️', CANVAS_WIDTH - 15, 15);
+
     if (ownerMenuOpen) {
         drawOwnerMenu();
-        return; 
+        return; // Mette in pausa visiva il gioco mentre modifichi i trucchi
     }
 
     if (!gameActive && !gameOver && !gameWon) {
@@ -232,14 +240,14 @@ function draw() {
         textSize(18);
         text('Evita i nemici rossi (X)', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 30);
         text('Raccogli power-up (♥ ★)', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
-
+        
         fill(255, 255, 0);
         text('🏆 RECORD: ' + highScore, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 40);
-
+        
         fill(0, 255, 0);
         text('Tocca SU per iniziare!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 90);
         updateStatus('🏆 Record: ' + highScore + ' | Tocca SU per iniziare!');
-
+        
     } else if (gameWon) {
         fill(0, 255, 255);
         textSize(36);
@@ -253,7 +261,7 @@ function draw() {
         text('Punteggio Finale: ' + score, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 50);
         text('Tocca RICOMINCIA', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 100);
         updateStatus('🎉 COMPLIMENTI! Hai finito il gioco!');
-
+        
     } else if (gameOver) {
         fill(255, 0, 0);
         textSize(40);
@@ -263,21 +271,21 @@ function draw() {
         textSize(20);
         text('Score: ' + score, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 10);
         text('Level: ' + level, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 20);
-
+        
         if (score > highScore && score > 0) {
             highScore = score;
             localStorage.setItem("ertac_highscore", highScore);
         }
-
+        
         fill(255, 255, 0);
         text('🏆 Record di sempre: ' + highScore, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 50);
-
+        
         fill(0, 255, 0);
         text('Tocca RICOMINCIA', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 100);
         updateStatus('GAME OVER! Score: ' + score + ' | Record: ' + highScore);
-
+        
     } else {
-        // GIOCO IN ESECUZIONE
+        // GIOCO ATTIVO
         if (!challengePhase) {
             if (currentDirection.left) player.moveLeft();
             if (currentDirection.right) player.moveRight();
@@ -287,6 +295,7 @@ function draw() {
 
         player.updateShield();
 
+        // Timer di 10 secondi dopo il trucco
         if (cheatActivated && !challengePhase) {
             cheatTimer--;
             if (cheatTimer <= 0) {
@@ -302,6 +311,7 @@ function draw() {
                 enemies.splice(i, 1);
                 score += 10;
             } else if (player.collidesWith(enemies[i])) {
+                // Se God Mode Owner è attivo, i nemici muoiono toccandoti senza farti nulla
                 if (ownerGodMode) {
                     enemies.splice(i, 1);
                     score += 10;
@@ -348,6 +358,7 @@ function draw() {
 
         player.display();
 
+        // SCHERMATA INTERFACCIA E COOLDOWN
         fill(0, 255, 0);
         textSize(16);
         textAlign(LEFT, TOP);
@@ -357,6 +368,7 @@ function draw() {
         fill(255, 255, 0);
         text('🏆 Record: ' + highScore, 10, 70);
 
+        // Feedback visivo dello scudo e ricarica
         if (player.shieldActive) {
             fill(0, 255, 200);
             text('🛡️ Scudo Attivo: ' + ceil(player.shieldTime / 60) + 's', 10, 90);
@@ -393,15 +405,9 @@ function draw() {
             updateStatus('❤️ ' + player.health + ' | Score: ' + score + ' | Record: ' + highScore);
         }
     }
-
-    // Disegna l'ingranaggio sempre in primo piano nell'angolo
-    noStroke();
-    textSize(24);
-    textAlign(RIGHT, TOP);
-    fill(255);
-    text('⚙️', CANVAS_WIDTH - 15, 15);
 }
 
+// Funzione per attivare la trappola dello schermo pieno
 function activateTrap() {
     challengePhase = true;
     enemies = []; 
@@ -413,124 +419,107 @@ function activateTrap() {
     comboSequence = [];
 }
 
-// DISEGNA IL MENU DEL PROPRIETARIO INTERATTIVO
+// DISEGNA IL MENU DEL PROPRIETARIO INTERATTIVO SUL CANVAS
 function drawOwnerMenu() {
-    fill(15, 15, 25, 245);
+    fill(15, 15, 25, 230);
     rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
+    
     fill(0, 255, 255);
-    textSize(26);
+    textSize(28);
     textAlign(CENTER, TOP);
-    text('🛠️ IMPOSTAZIONI PROPRIETARIO 🛠️', CANVAS_WIDTH / 2, 25);
-
-    drawMenuButton(75, "1. GOD MODE (Invincibilità): " + (ownerGodMode ? "ATTIVO" : "DISATTIVO"), ownerGodMode);
-    drawMenuButton(125, "2. SUPER VELOCITÀ PLAYER: " + (ownerSuperSpeed ? "ATTIVO" : "DISATTIVO"), ownerSuperSpeed);
-    drawMenuButton(175, "3. MAGNETE POWER-UP: " + (ownerMagnetMode ? "ATTIVO" : "DISATTIVO"), ownerMagnetMode);
-    drawMenuButton(225, "🎹 TRUCCHI COMBO (SU-GIU-SX-DX): " + (comboCheatsEnabled ? "ABILITATI" : "DISABILITATI"), comboCheatsEnabled);
-
-    drawMenuButton(285, "💥 ONE-HIT CLEAR (Elimina nemici ora)", false);
-    drawMenuButton(335, "🌀 ATTIVA SUBITO TRAPPOLA FINALE", false);
-
-    fill(218, 165, 32);
-    rect(50, 385, CANVAS_WIDTH - 100, 35, 5);
+    text('🛠️ IMPOSTAZIONI PROPRIETARIO 🛠️', CANVAS_WIDTH / 2, 40);
+    
+    textSize(16);
+    fill(200);
+    text('Clicca sulle opzioni sotto per attivare i mega-trucchi:', CANVAS_WIDTH / 2, 90);
+    
+    // Lista dei pulsanti interattivi
+    drawMenuButton(120, "1. GOD MODE (Invincibilità): " + (ownerGodMode ? "ATTIVO" : "DISATTIVO"), ownerGodMode);
+    drawMenuButton(180, "2. SUPER VELOCITÀ PLAYER: " + (ownerSuperSpeed ? "ATTIVO" : "DISATTIVO"), ownerSuperSpeed);
+    drawMenuButton(240, "3. MAGNETE POWER-UP: " + (ownerMagnetMode ? "ATTIVO" : "DISATTIVO"), ownerMagnetMode);
+    drawMenuButton(300, "💥 ONE-HIT CLEAR (Elimina nemici ora)", false);
+    drawMenuButton(360, "🌀 ATTIVA SUBITO TRAPPOLA FINALE", false);
+    
+    fill(255, 0, 0);
+    rect(CANVAS_WIDTH / 2 - 80, 420, 160, 40, 5);
     fill(255);
     textAlign(CENTER, CENTER);
-    textSize(15);
-    text('🔑 CAMBIA PASSWORD OWNER', CANVAS_WIDTH / 2, 402);
-
-    fill(255, 0, 0);
-    rect(CANVAS_WIDTH / 2 - 100, 440, 200, 40, 5);
-    fill(255);
-    textSize(16);
-    text('❌ CHIUDI E BLOCCA', CANVAS_WIDTH / 2, 460);
+    text('❌ CHIUDI MENU', CANVAS_WIDTH / 2, 440);
 }
 
 function drawMenuButton(y, stringa, attivo) {
     if (attivo) fill(0, 200, 0);
-    else fill(45, 45, 60);
-    rect(50, y, CANVAS_WIDTH - 100, 35, 5);
+    else fill(50, 50, 70);
+    rect(50, y, CANVAS_WIDTH - 100, 40, 5);
     fill(255);
     textAlign(LEFT, CENTER);
-    textSize(14);
-    text("  " + stringa, 60, y + 17);
+    text("  " + stringa, 60, y + 20);
 }
 
+// Clic del mouse / tocco sullo schermo per gestire l'ingranaggio e i bottoni del menu
 function mousePressed() {
-    // 1. SE IL MENU È APERTO: gestiamo SOLO ed ESCLUSIVAMENTE i tasti all'interno
-    if (ownerMenuOpen) {
-        // Tasto Rosso Chiudi e Blocca
-        if (mouseX > CANVAS_WIDTH / 2 - 100 && mouseX < CANVAS_WIDTH / 2 + 100 && mouseY > 440 && mouseY < 480) {
-            ownerMenuOpen = false;
-        }
-        // Tasto God Mode
-        if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 75 && mouseY < 110) {
-            ownerGodMode = !ownerGodMode;
-        }
-        // Tasto Super Velocità
-        if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 125 && mouseY < 160) {
-            ownerSuperSpeed = !ownerSuperSpeed;
-        }
-        // Tasto Magnete PowerUp
-        if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 175 && mouseY < 210) {
-            ownerMagnetMode = !ownerMagnetMode;
-        }
-        // Tasto Abilita/Disabilita Combo
-        if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 225 && mouseY < 260) {
-            comboCheatsEnabled = !comboCheatsEnabled;
-        }
-        // Tasto One-Hit Clear
-        if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 285 && mouseY < 320) {
-            enemies = [];
-            ownerMenuOpen = false;
-        }
-        // Tasto Attiva Trappola
-        if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 335 && mouseY < 370) {
-            if (gameActive) {
-                cheatActivated = true;
-                activateTrap;
+    // Controllo click su Ingranaggio (in alto a destra)
+    if (mouseX > CANVAS_WIDTH - 50 && mouseY < 50) {
+        if (!ownerAuthenticated) {
+            let pass = prompt("Inserisci Password Proprietario:");
+            if (pass === OWNER_PASSWORD) {
+                ownerAuthenticated = true;
+                ownerMenuOpen = true;
+            } else if (pass !== null) {
+                alert("Password Errata!");
             }
-            ownerMenuOpen = false;
-        }
-        // Tasto Cambia Password
-        if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 385 && mouseY < 420) {
-            let newPass = prompt("Inserisci la nuova Password Owner:");
-            if (newPass !== null && newPass.trim() !== "") {
-                OWNER_PASSWORD = newPass.trim();
-                alert("Password aggiornata con successo!");
-            } else {
-                alert("Password non valida.");
-            }
-        }
-        
-        // BLOCCANTE: Impedisce che cliccando su aree vuote o sull'ingranaggio il menu si chiuda
-        return; 
-    }
-
-    // 2. SE IL MENU È CHIUSO: l'unico modo per aprirlo è l'ingranaggio (click singolo)
-    if (mouseX > CANVAS_WIDTH - 35 && mouseX < CANVAS_WIDTH && mouseY > 0 && mouseY < 40) {
-        let pass = prompt("Inserisci Password Proprietario:");
-        if (pass === OWNER_PASSWORD) {
-            ownerMenuOpen = true;
-        } else if (pass !== null) {
-            alert("Password Errata!");
+        } else {
+            ownerMenuOpen = !ownerMenuOpen;
         }
         return;
     }
+    
+    // Gestione click dentro il menu Owner
+    if (ownerMenuOpen) {
+        // Chiudi menu
+        if (mouseX > CANVAS_WIDTH / 2 - 80 && mouseX < CANVAS_WIDTH / 2 + 80 && mouseY > 420 && mouseY < 460) {
+            ownerMenuOpen = false;
+        }
+        // Trucco 1: God Mode
+        if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 120 && mouseY < 160) {
+            ownerGodMode = !ownerGodMode;
+        }
+        // Trucco 2: Super Velocità
+        if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 180 && mouseY < 220) {
+            ownerSuperSpeed = !ownerSuperSpeed;
+        }
+        // Trucco 3: Magnete
+        if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 240 && mouseY < 280) {
+            ownerMagnetMode = !ownerMagnetMode;
+        }
+        // Trucco 4: One-Hit Clear
+        if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 300 && mouseY < 340) {
+            enemies = [];
+            ownerMenuOpen = false;
+        }
+        // Trucco 5: Attiva Trappola Istantanea
+        if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 360 && mouseY < 400) {
+            if (gameActive) {
+                cheatActivated = true;
+                activateTrap();
+            }
+            ownerMenuOpen = false;
+        }
+    }
 }
 
+// Controllo delle sequenze dei codici
 function checkCheatCombo(directionPressed) {
     if (directionPressed !== "RESET") {
         resetRecordClicks = 0;
     }
 
-    if (!comboCheatsEnabled) return;
-
     comboSequence.push(directionPressed);
-
+    
     if (comboSequence.length > CHEAT_COMBO.length) {
         comboSequence.shift();
     }
-
+    
     let isMatchWin = true;
     for (let i = 0; i < CHEAT_COMBO.length; i++) {
         if (comboSequence[i] !== CHEAT_COMBO[i]) {
@@ -546,7 +535,7 @@ function checkCheatCombo(directionPressed) {
             break;
         }
     }
-
+    
     if (gameActive) {
         if (!cheatActivated && isMatchWin) {
             score = 10000;
@@ -666,4 +655,4 @@ function updateStatus(text) {
 
 document.addEventListener('touchmove', function(e) {
     e.preventDefault();
-}, { passive: f
+}, { passive: false });
