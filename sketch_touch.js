@@ -30,7 +30,7 @@ let ownerMenuOpen = false;
 let ownerGodMode = false;
 let ownerSuperSpeed = false;
 let ownerMagnetMode = false;
-let comboCheatsEnabled = true; // NUOVO: Abilita/Disabilita le combo standard dal menu owner
+let comboCheatsEnabled = true; 
 
 // Costanti Dimensioni
 const PLAYER_SIZE = 30;
@@ -218,11 +218,7 @@ function draw() {
     noFill();
     rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    noStroke();
-    textSize(24);
-    textAlign(RIGHT, TOP);
-    text('⚙️', CANVAS_WIDTH - 15, 15);
-
+    // Gestione del Menu Owner disegnato SOPRA il gioco senza bloccare p5.js
     if (ownerMenuOpen) {
         drawOwnerMenu();
         return; 
@@ -281,6 +277,7 @@ function draw() {
         updateStatus('GAME OVER! Score: ' + score + ' | Record: ' + highScore);
         
     } else {
+        // GIOCO IN ESECUZIONE
         if (!challengePhase) {
             if (currentDirection.left) player.moveLeft();
             if (currentDirection.right) player.moveRight();
@@ -396,6 +393,13 @@ function draw() {
             updateStatus('❤️ ' + player.health + ' | Score: ' + score + ' | Record: ' + highScore);
         }
     }
+
+    // Disegna l'ingranaggio sempre in primo piano nell'angolo
+    noStroke();
+    textSize(24);
+    textAlign(RIGHT, TOP);
+    fill(255);
+    text('⚙️', CANVAS_WIDTH - 15, 15);
 }
 
 function activateTrap() {
@@ -411,7 +415,7 @@ function activateTrap() {
 
 // DISEGNA IL MENU DEL PROPRIETARIO INTERATTIVO
 function drawOwnerMenu() {
-    fill(15, 15, 25, 240);
+    fill(15, 15, 25, 245);
     rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
     fill(0, 255, 255);
@@ -419,18 +423,14 @@ function drawOwnerMenu() {
     textAlign(CENTER, TOP);
     text('🛠️ IMPOSTAZIONI PROPRIETARIO 🛠️', CANVAS_WIDTH / 2, 25);
     
-    // Griglia Pulsanti Trucchi
     drawMenuButton(75, "1. GOD MODE (Invincibilità): " + (ownerGodMode ? "ATTIVO" : "DISATTIVO"), ownerGodMode);
     drawMenuButton(125, "2. SUPER VELOCITÀ PLAYER: " + (ownerSuperSpeed ? "ATTIVO" : "DISATTIVO"), ownerSuperSpeed);
     drawMenuButton(175, "3. MAGNETE POWER-UP: " + (ownerMagnetMode ? "ATTIVO" : "DISATTIVO"), ownerMagnetMode);
-    
-    // MODIFICA: Pulsante Abilita/Disabilita Trucchi Combo
     drawMenuButton(225, "🎹 TRUCCHI COMBO (SU-GIU-SX-DX): " + (comboCheatsEnabled ? "ABILITATI" : "DISABILITATI"), comboCheatsEnabled);
     
     drawMenuButton(285, "💥 ONE-HIT CLEAR (Elimina nemici ora)", false);
     drawMenuButton(335, "🌀 ATTIVA SUBITO TRAPPOLA FINALE", false);
     
-    // MODIFICA: Pulsante Cambia Password
     fill(218, 165, 32);
     rect(50, 385, CANVAS_WIDTH - 100, 35, 5);
     fill(255);
@@ -438,7 +438,6 @@ function drawOwnerMenu() {
     textSize(15);
     text('🔑 CAMBIA PASSWORD OWNER', CANVAS_WIDTH / 2, 402);
     
-    // Pulsante Chiudi Menu e blocca
     fill(255, 0, 0);
     rect(CANVAS_WIDTH / 2 - 100, 440, 200, 40, 5);
     fill(255);
@@ -457,8 +456,8 @@ function drawMenuButton(y, stringa, attivo) {
 }
 
 function mousePressed() {
-    // Bottone Ingranaggio: Chiede sempre il codice se il menu è chiuso
-    if (mouseX > CANVAS_WIDTH - 50 && mouseY < 50) {
+    // Intercettazione del tocco sull'ingranaggio in alto a destra
+    if (mouseX > CANVAS_WIDTH - 60 && mouseX < CANVAS_WIDTH && mouseY > 0 && mouseY < 60) {
         if (!ownerMenuOpen) {
             let pass = prompt("Inserisci Password Proprietario:");
             if (pass === OWNER_PASSWORD) {
@@ -467,39 +466,31 @@ function mousePressed() {
                 alert("Password Errata!");
             }
         } else {
-            // Se premi l'ingranaggio mentre è aperto, si chiude e si riblocca
             ownerMenuOpen = false;
         }
         return;
     }
     
     if (ownerMenuOpen) {
-        // Chiudi menu e togli l'autenticazione (richiederà la password alla riapertura)
         if (mouseX > CANVAS_WIDTH / 2 - 100 && mouseX < CANVAS_WIDTH / 2 + 100 && mouseY > 440 && mouseY < 480) {
             ownerMenuOpen = false;
         }
-        // Trucco 1: God Mode
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 75 && mouseY < 110) {
             ownerGodMode = !ownerGodMode;
         }
-        // Trucco 2: Super Velocità
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 125 && mouseY < 160) {
             ownerSuperSpeed = !ownerSuperSpeed;
         }
-        // Trucco 3: Magnete
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 175 && mouseY < 210) {
             ownerMagnetMode = !ownerMagnetMode;
         }
-        // MODIFICA: Attiva/Disattiva Combo Cheats
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 225 && mouseY < 260) {
             comboCheatsEnabled = !comboCheatsEnabled;
         }
-        // Trucco 4: One-Hit Clear
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 285 && mouseY < 320) {
             enemies = [];
             ownerMenuOpen = false;
         }
-        // Trucco 5: Attiva Trappola Istantanea
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 335 && mouseY < 370) {
             if (gameActive) {
                 cheatActivated = true;
@@ -507,7 +498,6 @@ function mousePressed() {
             }
             ownerMenuOpen = false;
         }
-        // MODIFICA: Cambia Password
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 385 && mouseY < 420) {
             let newPass = prompt("Inserisci la nuova Password Owner:");
             if (newPass !== null && newPass.trim() !== "") {
@@ -520,13 +510,11 @@ function mousePressed() {
     }
 }
 
-// Controllo delle sequenze dei codici
 function checkCheatCombo(directionPressed) {
     if (directionPressed !== "RESET") {
         resetRecordClicks = 0;
     }
 
-    // Se i trucchi combo sono disattivati dal menu owner, blocca l'elaborazione delle combo
     if (!comboCheatsEnabled) return;
 
     comboSequence.push(directionPressed);
@@ -656,4 +644,18 @@ function spawnInitialEnemies() {
 }
 
 function activateShield() {
-    if (gameActive 
+    if (gameActive && !challengePhase) {
+        player.activateShield();
+    }
+}
+
+function updateStatus(text) {
+    let status = document.getElementById('gameStatus');
+    if (status) {
+        status.textContent = text;
+    }
+}
+
+document.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+}, { passive: false });
