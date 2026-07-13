@@ -25,7 +25,6 @@ let gameWon = false;
 // --- MODIFICHE OWNER & PASSWORD ---
 let OWNER_PASSWORD = "owner2026"; // Password iniziale
 let ownerMenuOpen = false;
-let lastGearClick = 0; // Gestione del doppio clic per mobile
 
 // Opzioni Trucchi Owner
 let ownerGodMode = false;
@@ -457,22 +456,18 @@ function drawMenuButton(y, stringa, attivo) {
 }
 
 function mousePressed() {
-    // Intercettazione del tocco sull'ingranaggio in alto a destra con DOPPIO CLIC
-    if (mouseX > CANVAS_WIDTH - 60 && mouseX < CANVAS_WIDTH && mouseY > 0 && mouseY < 60) {
-        let currentTime = millis();
-        if (currentTime - lastGearClick < 300) { // Controlla se la distanza tra due clic è inferiore a 300ms
-            if (!ownerMenuOpen) {
-                let pass = prompt("Inserisci Password Proprietario:");
-                if (pass === OWNER_PASSWORD) {
-                    ownerMenuOpen = true;
-                } else if (pass !== null) {
-                    alert("Password Errata!");
-                }
-            } else {
-                ownerMenuOpen = false;
+    // AREA DI TOCCO ULTRA DEFINITA: Solo l'esatto quadratino dell'ingranaggio in alto a destra (X tra 565 e 600, Y tra 0 e 40)
+    if (mouseX > CANVAS_WIDTH - 35 && mouseX < CANVAS_WIDTH && mouseY > 0 && mouseY < 40) {
+        if (!ownerMenuOpen) {
+            let pass = prompt("Inserisci Password Proprietario:");
+            if (pass === OWNER_PASSWORD) {
+                ownerMenuOpen = true;
+            } else if (pass !== null) {
+                alert("Password Errata!");
             }
+        } else {
+            ownerMenuOpen = false;
         }
-        lastGearClick = currentTime; // Registra il tempo del clic attuale
         return;
     }
 
