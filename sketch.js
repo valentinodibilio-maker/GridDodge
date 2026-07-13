@@ -21,14 +21,9 @@ let passwordCorrect = false;
 let godMode = false;
 let magnetMode = false;
 let superSpeed = false;
-let comboEnabled = false; // Attiva/disattiva la possibilità di fare la combo
-const ADMIN_PASSWORD = "admin"; 
+const ADMIN_PASSWORD = "admin"; // <--- LA PASSWORD È QUESTA: admin
 
-// --- GESTIONE COMBINAZIONE SEGRETA ---
-let secretSequence = [];
-const REQUIRED_SEQUENCE = ["UP", "DOWN", "LEFT", "RIGHT"]; // SU, GIU, SX, DX
-
-// --- VARIABILI DI MOVIMENTO (per i pulsanti HTML) ---
+// --- VARIABILI DI MOVIMENTO ---
 let moveDir = "";
 
 function setup() {
@@ -70,7 +65,7 @@ function draw() {
   }
   if (shieldCooldown > 0) shieldCooldown--;
 
-  // Generazione nemici basata sul punteggio (più punti hai, più è infernale!)
+  // Generazione nemici basata sul punteggio
   let spawnRate = max(5, 40 - floor(score / 10));
   if (frameCount % spawnRate === 0) {
     enemies.push(new Enemy());
@@ -139,34 +134,6 @@ function draw() {
   }
 }
 
-// --- CONTROLLO DELLA COMBO DI TASTI ---
-function checkCheatCombo(direction) {
-  if (!comboEnabled || gameOver) return;
-
-  // Aggiunge la direzione premuta alla sequenza attuale
-  secretSequence.push(direction);
-
-  // Tiene solo gli ultimi 4 tasti premuti
-  if (secretSequence.length > REQUIRED_SEQUENCE.length) {
-    secretSequence.shift();
-  }
-
-  // Verifica se la sequenza coincide con SU, GIU, SX, DX
-  let isMatch = true;
-  for (let i = 0; i < REQUIRED_SEQUENCE.length; i++) {
-    if (secretSequence[i] !== REQUIRED_SEQUENCE[i]) {
-      isMatch = false;
-      break;
-    }
-  }
-
-  if (isMatch) {
-    score = 10000; // Teletrasporto a livello / punteggio 10.000!
-    secretSequence = []; // Svuota la sequenza
-    document.getElementById("gameStatus").innerText = "⚡ TELETRASPORTO: LIVELLO 10.000! ⚡";
-  }
-}
-
 // --- INTERFACCIA GRAFICA (UI) ---
 function drawUI() {
   fill(0, 255, 0);
@@ -176,7 +143,7 @@ function drawUI() {
   textAlign(RIGHT, TOP);
   text("RECORD: " + highScore, width - 50, 15);
 
-  // Ingranaggio
+  // Ingranaggio segreto
   push();
   stroke(0, 255, 0);
   strokeWeight(2);
@@ -204,7 +171,7 @@ function drawUI() {
     text("🛡️ PRONTO", 15, 65);
   }
   
-  if (godMode || magnetMode || superSpeed || comboEnabled) {
+  if (godMode || magnetMode || superSpeed) {
     fill(255, 0, 255);
     textAlign(CENTER, TOP);
     text("⚡ TRUCCHI ATTIVI ⚡", width / 2, 40);
@@ -254,9 +221,9 @@ function drawAdminOverlay() {
     fill(superSpeed ? 255 : 100, superSpeed ? 0 : 255, superSpeed ? 255 : 100);
     text("[3] SUPER VELOCITÀ: " + (superSpeed ? "ON" : "OFF"), width / 2, 230);
     
-    // NUOVO PULSANTE PER ABILITARE LA COMBO
-    fill(comboEnabled ? 0: 255, comboEnabled ? 255 : 255, comboEnabled ? 255 : 100);
-    text("[4] COMBO 10k: " + (comboEnabled ? "PRONTA (SU->GIU->SX->DX)" : "DISATTIVATA"), width / 2, 280);
+    // NUOVO PULSANTE DIRETTO PER IL TELETRASPORTO
+    fill(255, 255, 0);
+    text("[⚡] TELETRASPORTO LIVELLO 10.000", width / 2, 280);
     
     fill(255, 100, 100);
     text("Clicca in fondo per uscire", width / 2, height - 60);
@@ -279,7 +246,14 @@ function mousePressed() {
       if (mouseY > 110 && mouseY < 150) godMode = !godMode;
       if (mouseY > 160 && mouseY < 200) magnetMode = !magnetMode;
       if (mouseY > 210 && mouseY < 250) superSpeed = !superSpeed;
-      if (mouseY > 260 && mouseY < 300) comboEnabled = !comboEnabled; // Interruttore combo
+      
+      // Se clicchi sulla riga del teletrasporto attiva subito il trucco!
+      if (mouseY > 260 && mouseY < 300) {
+        score = 10000;
+        showAdminMenu = false; // Chiude il menu così vedi subito il livello 10k!
+        if(!gameStarted) gameStarted = true;
+        document.getElementById("gameStatus").innerText = "⚡ LIVELLO 10.000 ATTIVATO! ⚡";
+      }
       
       if (mouseY > height - 80) showAdminMenu = false;
     }
@@ -293,12 +267,10 @@ function handleHTMLControls(speed) {
   if (moveDir === "RIGHT") player.x = min(width - 20, player.x + speed);
 }
 
-// Bottoni HTML + Tracciamento combo
-function moveUp() { if(!gameStarted) gameStarted = true; moveDir = "UP"; checkCheatCombo("UP"); }
-// Nota: Registra la combo solo quando premi inizialmente il tasto
-function moveDown() { moveDir = "DOWN"; checkCheatCombo("DOWN"); }
-function moveLeft() { moveDir = "LEFT"; checkCheatCombo("LEFT"); }
-function moveRight() { moveDir = "RIGHT"; checkCheatCombo("RIGHT"); }
+function moveUp() { if(!gameStarted) gameStarted = true; moveDir = "UP"; }
+function moveDown() { moveDir = "DOWN"; }
+function moveLeft() { moveDir = "LEFT"; }
+function moveRight() { moveDir = "RIGHT"; }
 function stopMove() { moveDir = ""; }
 
 function activateShield() {
@@ -321,7 +293,6 @@ function resetGame() {
   shieldTimer = 0;
   shieldCooldown = 0;
   gameOver = false;
-  secretSequence = []; 
   document.getElementById("gameStatus").innerText = "Gioco pronto! Schiva tutto!";
 }
 
@@ -334,7 +305,7 @@ function endGame() {
   }
 }
 
-// --- CLASSI ORIGINALI ---
+// --- CLASSI ---
 class Player {
   constructor(x, y) { this.x = x; this.y = y; this.r = 15; }
   update() {
@@ -366,7 +337,7 @@ class Enemy {
     this.x = random(20, width - 20);
     this.y = 50;
     this.r = random(10, 18);
-    this.speed = random(2, 5) + (score * 0.03); // Velocità scalata per gestire i 10.000 punti!
+    this.speed = random(2, 5) + (score * 0.03); 
   }
   update() { this.y += this.speed; }
   display() {
@@ -382,4 +353,10 @@ class PowerUp {
     this.type = random(1) > 0.75 ? "HEART" : "STAR";
     this.speed = 2;
   }
-  update() { this.y += this.speed
+  update() { this.y += this.speed; }
+  attractTo(tx, ty) { this.x = lerp(this.x, tx, 0.05); this.y = lerp(this.y, ty, 0.05); }
+  display() {
+    push(); textAlign(CENTER, CENTER); textSize(this.r * 2);
+    text(this.type === "HEART" ? "❤️" : "⭐", this.x, this.y); pop();
+  }
+}
