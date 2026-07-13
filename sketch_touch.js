@@ -22,10 +22,11 @@ let cheatTimer = 0;
 let challengePhase = false; 
 let gameWon = false; 
 
-// --- OWNER & PASSWORD ---
-let OWNER_PASSWORD = "owner2026"; 
+// --- NUOVO SISTEMA OWNER SENZA PROMPT DEL BROWSER ---
 let ownerMenuOpen = false;
-let menuJustOpened = false; // VARIABILE PER RISOLVERE IL BUG DEL DOPPIO CLICK
+let insertModeActive = false; // Stato di inserimento password grafico
+let passwordSequence = [];
+let OWNER_PASS_CODE = ["SU", "SU", "GIU", "GIU"]; // La tua nuova password di pulsanti!
 
 // Opzioni Trucchi Owner
 let ownerGodMode = false;
@@ -198,10 +199,6 @@ function setup() {
     let canvas = createCanvas(CANVAS_WIDTH, CANVAS_HEIGHT);
     canvas.parent(container);
 
-    document.body.addEventListener('touchmove', function(e) {
-        e.preventDefault();
-    }, { passive: false });
-
     let savedHighScore = localStorage.getItem("ertac_highscore");
     if (savedHighScore !== null) {
         highScore = parseInt(savedHighScore);
@@ -219,8 +216,17 @@ function draw() {
     noFill();
     rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+    // Schermata di inserimento password grafica nativa
+    if (insertModeActive) {
+        drawInsertPasswordScreen();
+        drawSettingsIcon();
+        return;
+    }
+
+    // Schermata del Menu Owner aperta
     if (ownerMenuOpen) {
         drawOwnerMenu();
+        drawSettingsIcon();
         return; 
     }
 
@@ -374,7 +380,7 @@ function draw() {
             if (frameCount % 30 < 15) { 
                 text('⚠️ INSERISCI CODICE FINALE! ⚠️', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 40);
             }
-            updateStatus('🚨 INSERISCI IL CODICE: Uguale per VINCERE, o SX-DX-SX-DX per MODALITÀ INFINITA!');
+            updateStatus('🚨 INSERISCI IL CODICE CON I PULSANTI VERDI PER VINCERE!');
         } else if (cheatActivated) {
             let secondsLeft = ceil(cheatTimer / 60);
             fill(255, 100, 0);
@@ -393,8 +399,12 @@ function draw() {
         }
     }
 
+    drawSettingsIcon();
+}
+
+function drawSettingsIcon() {
     noStroke();
-    textSize(24);
+    textSize(26);
     textAlign(RIGHT, TOP);
     fill(255);
     text('⚙️', CANVAS_WIDTH - 15, 15);
@@ -411,8 +421,41 @@ function activateTrap() {
     comboSequence = [];
 }
 
+// NUOVA SCHERMATA GRAFICA PER LA PASSWORD (EVITA I COLOGNAMENTI MOBILE)
+function drawInsertPasswordScreen() {
+    fill(20, 20, 40, 250);
+    rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    
+    fill(0, 255, 255);
+    textSize(24);
+    textAlign(CENTER, TOP);
+    text('🔑 ACCESSO SICURO PROPRIETARIO', CANVAS_WIDTH / 2, 50);
+    
+    fill(200);
+    textSize(16);
+    text('Usa i tasti direzionali verdi per inserire la sequenza.', CANVAS_WIDTH / 2, 110);
+    text('La password attuale richiede 4 movimenti.', CANVAS_WIDTH / 2, 140);
+    
+    // Mostra quanti pallini/caratteri sono stati inseriti
+    textSize(28);
+    let asterischi = "";
+    for(let i=0; i<passwordSequence.length; i++) {
+        asterischi += "🔴 ";
+    }
+    if(passwordSequence.length === 0) asterischi = "(In attesa dei tasti...)";
+    fill(255, 255, 0);
+    text(asterischi, CANVAS_WIDTH / 2, 210);
+
+    // Tasto cancella/annulla grafico
+    fill(100, 50, 50);
+    rect(CANVAS_WIDTH / 2 - 80, 320, 160, 40, 5);
+    fill(255);
+    textSize(16);
+    text('Annulla', CANVAS_WIDTH / 2, 340);
+}
+
 function drawOwnerMenu() {
-    fill(15, 15, 25, 245);
+    fill(15, 15, 25, 250);
     rect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     
     fill(0, 255, 255);
@@ -432,8 +475,8 @@ function drawOwnerMenu() {
     rect(50, 385, CANVAS_WIDTH - 100, 35, 5);
     fill(255);
     textAlign(CENTER, CENTER);
-    textSize(15);
-    text('🔑 CAMBIA PASSWORD OWNER', CANVAS_WIDTH / 2, 402);
+    textSize(14);
+    text('🔑 REIMPOSTA PASSWORD OWNER A DEFAULT', CANVAS_WIDTH / 2, 402);
     
     fill(255, 0, 0);
     rect(CANVAS_WIDTH / 2 - 100, 440, 200, 40, 5);
@@ -452,57 +495,47 @@ function drawMenuButton(y, stringa, attivo) {
     text("  " + stringa, 60, y + 17);
 }
 
-// CORREZIONE DEFINITIVA PER IL CLICK DEL MOUSE / TOCCO FANTASMA
 function mousePressed() {
-    // Se il menu è stato appena sbloccato in questo specifico frame, saltiamo questo click fasullo
-    if (menuJustOpened) {
-        menuJustOpened = false;
-        return;
-    }
-
-    // Intercettazione del tocco sull'ingranaggio (angolo in alto a destra)
+    // Intercettazione dell'ingranaggio
     if (mouseX > CANVAS_WIDTH - 60 && mouseX < CANVAS_WIDTH && mouseY > 0 && mouseY < 60) {
-        if (!ownerMenuOpen) {
-            let pass = prompt("Inserisci Password Proprietario:");
-            if (pass === OWNER_PASSWORD) {
-                ownerMenuOpen = true;
-                menuJustOpened = true; // Blocca la chiusura immediata nel frame corrente
-            } else if (pass !== null) {
-                alert("Password Errata!");
-            }
+        if (!ownerMenuOpen && !insertModeActive) {
+            insertModeActive = true;
+            passwordSequence = []; // Svuota i tentativi precedenti
         } else {
             ownerMenuOpen = false;
+            insertModeActive = false;
         }
         return;
     }
     
+    if (insertModeActive) {
+        // Tasto Annulla dentro la schermata password
+        if (mouseX > CANVAS_WIDTH / 2 - 80 && mouseX < CANVAS_WIDTH / 2 + 80 && mouseY > 320 && mouseY < 360) {
+            insertModeActive = false;
+        }
+        return;
+    }
+
     if (ownerMenuOpen) {
-        // Bottone Chiudi
         if (mouseX > CANVAS_WIDTH / 2 - 100 && mouseX < CANVAS_WIDTH / 2 + 100 && mouseY > 440 && mouseY < 480) {
             ownerMenuOpen = false;
         }
-        // Trucco 1: God Mode
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 75 && mouseY < 110) {
             ownerGodMode = !ownerGodMode;
         }
-        // Trucco 2: Super Velocità
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 125 && mouseY < 160) {
             ownerSuperSpeed = !ownerSuperSpeed;
         }
-        // Trucco 3: Magnete
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 175 && mouseY < 210) {
             ownerMagnetMode = !ownerMagnetMode;
         }
-        // Abilita/Disabilita Combo Cheats
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 225 && mouseY < 260) {
             comboCheatsEnabled = !comboCheatsEnabled;
         }
-        // Trucco 4: One-Hit Clear
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 285 && mouseY < 320) {
             enemies = [];
             ownerMenuOpen = false;
         }
-        // Trucco 5: Attiva Trappola Istantanea
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 335 && mouseY < 370) {
             if (gameActive) {
                 cheatActivated = true;
@@ -510,23 +543,46 @@ function mousePressed() {
             }
             ownerMenuOpen = false;
         }
-        // Cambia Password
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 385 && mouseY < 420) {
-            let newPass = prompt("Inserisci la nuova Password Owner:");
-            if (newPass !== null && newPass.trim() !== "") {
-                OWNER_PASSWORD = newPass.trim();
-                alert("Password aggiornata con successo!");
-            } else {
-                alert("Password non valida.");
-            }
+            OWNER_PASS_CODE = ["SU", "SU", "GIU", "GIU"];
+            updateStatus("Password resettata a: SU SU GIU GIU");
         }
     }
+}
+
+// Gestione dell'input dei pulsanti per la password o per i trucchi
+function handleOwnerPasswordInput(direction) {
+    if (!insertModeActive) return false;
+
+    passwordSequence.push(direction);
+
+    // Controlla se la sequenza inserita combacia con la password
+    let valid = true;
+    if (passwordSequence.length === OWNER_PASS_CODE.length) {
+        for (let i = 0; i < OWNER_PASS_CODE.length; i++) {
+            if (passwordSequence[i] !== OWNER_PASS_CODE[i]) {
+                valid = false;
+            }
+        }
+        
+        if (valid) {
+            insertModeActive = false;
+            ownerMenuOpen = true; 
+        } else {
+            passwordSequence = []; // Sbagliata, resetta e riprova
+            updateStatus("❌ Sequenza errata! Riprova.");
+        }
+    }
+    return true; // Blocca i movimenti del player durante l'inserimento
 }
 
 function checkCheatCombo(directionPressed) {
     if (directionPressed !== "RESET") {
         resetRecordClicks = 0;
     }
+
+    // Se stiamo digitando la password del menu, intercetta qui e non muovere il giocatore
+    if (handleOwnerPasswordInput(directionPressed)) return;
 
     if (!comboCheatsEnabled) return;
 
@@ -585,82 +641,4 @@ function checkCheatCombo(directionPressed) {
 }
 
 function moveUp() {
-    checkCheatCombo("SU");
-    if (!gameActive && !gameOver && !gameWon) {
-        gameActive = true;
-        currentDirection.up = false;
-    } else if (gameActive && !challengePhase) {
-        currentDirection.up = true;
-    }
-}
-
-function moveDown() {
-    checkCheatCombo("GIU");
-    if (gameActive && !challengePhase) {
-        currentDirection.down = true;
-    }
-}
-
-function moveLeft() {
-    checkCheatCombo("SX");
-    if (gameActive && !challengePhase) {
-        currentDirection.left = true;
-    }
-}
-
-function moveRight() {
-    checkCheatCombo("DX");
-    if (gameActive && !challengePhase) {
-        currentDirection.right = true;
-    }
-}
-
-function stopMove() {
-    currentDirection = { up: false, down: false, left: false, right: false };
-}
-
-function doNothing() {
-    resetRecordClicks++;
-    if (resetRecordClicks >= 3) {
-        highScore = 0;
-        localStorage.setItem("ertac_highscore", 0);
-        resetRecordClicks = 0;
-        updateStatus("♻️ RECORD AZZERATO CON SUCCESSO! ♻️");
-    }
-}
-
-function restartGame() {
-    resetGame();
-}
-
-function resetGame() {
-    player = new Player();
-    enemies = [];
-    powerups = [];
-    score = 0;
-    level = 1;
-    gameActive = true;
-    gameOver = false;
-    gameWon = false;
-    cheatActivated = false;
-    cheatTimer = 0;
-    challengePhase = false;
-    comboSequence = [];
-    resetRecordClicks = 0;
-    spawnInitialEnemies();
-}
-
-function spawnInitialEnemies() {
-    for (let i = 0; i < 4; i++) {
-        enemies.push(new Enemy());
-    }
-}
-
-function activateShield() {
-    if (gameActive && !challengePhase) {
-        player.activateShield();
-    }
-}
-
-function updateStatus(text) {
-    let status = document.getElementByI
+    check
