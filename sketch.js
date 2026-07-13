@@ -8,6 +8,9 @@ let lives = 3;
 let gameOver = false;
 let gameStarted = false;
 
+// --- CONTEGGIO RESET RECORD SEGRETO ---
+let resetClicks = 0;
+
 // --- CONFIGURAZIONE SCUDO ---
 let shieldActive = false;
 let shieldTimer = 0;
@@ -134,9 +137,8 @@ function draw() {
   }
 }
 
-// --- INTERFACCIA GRAFICA CORRETTA (UI) ---
+// --- INTERFACCIA GRAFICA (UI) ---
 function drawUI() {
-  // Punti e Record
   fill(0, 255, 0);
   textSize(14);
   textAlign(LEFT, TOP);
@@ -157,14 +159,12 @@ function drawUI() {
   ellipse(0, 0, 10, 10);
   pop();
 
-  // Cuori della vita spostati più in basso per evitare sovrapposizioni
   textAlign(LEFT, TOP);
   let heartStr = "";
   for (let i = 0; i < lives; i++) heartStr += "❤️";
   textSize(16); 
   text(heartStr, 15, 45);
 
-  // Stato dello Scudo allineato correttamente sotto i cuori
   textSize(14);
   if (shieldActive) {
     fill(0, 191, 255);
@@ -177,7 +177,6 @@ function drawUI() {
     text("🛡️ SCUDO: PRONTO", 15, 75);
   }
   
-  // Scritta Trucchi se attivi
   if (godMode || magnetMode || superSpeed) {
     fill(255, 0, 255);
     textAlign(CENTER, TOP);
@@ -267,27 +266,38 @@ function mousePressed() {
 }
 
 function handleHTMLControls(speed) {
-  if (moveDir === "UP") player.y = max(110, player.y - speed); // Alzato il limite per non coprire l'UI
+  if (moveDir === "UP") player.y = max(110, player.y - speed); 
   if (moveDir === "DOWN") player.y = min(height - 20, player.y + speed);
   if (moveDir === "LEFT") player.x = max(20, player.x - speed);
   if (moveDir === "RIGHT") player.x = min(width - 20, player.x + speed);
 }
 
-function moveUp() { if(!gameStarted) gameStarted = true; moveDir = "UP"; }
-function moveDown() { moveDir = "DOWN"; }
-function moveLeft() { moveDir = "LEFT"; }
-function moveRight() { moveDir = "RIGHT"; }
+function moveUp() { if(!gameStarted) gameStarted = true; moveDir = "UP"; resetClicks = 0; }
+function moveDown() { moveDir = "DOWN"; resetClicks = 0; }
+function moveLeft() { moveDir = "LEFT"; resetClicks = 0; }
+function moveRight() { moveDir = "RIGHT"; resetClicks = 0; }
 function stopMove() { moveDir = ""; }
+
+// NUOVA FUNZIONE: Gestisce i 3 click sul tasto centrale
+function resetHighScoreClick() {
+  resetClicks++;
+  if (resetClicks >= 3) {
+    highScore = 0;
+    localStorage.setItem("gridDodgeHighScore", 0);
+    resetClicks = 0;
+    document.getElementById("gameStatus").innerText = "🗑️ RECORD AZZERATO CON SUCCESSO!";
+  }
+}
 
 function activateShield() {
   if (!gameStarted || gameOver || shieldCooldown > 0 || shieldActive) return;
   shieldActive = true;
   shieldTimer = SHIELD_DURATION;
   shieldCooldown = SHIELD_COOLDOWN_TIME;
+  resetClicks = 0;
 }
 
 function restartGame() { resetGame(); }
-function doNothing() {}
 
 function resetGame() {
   player = new Player(width / 2, height - 50);
@@ -299,6 +309,7 @@ function resetGame() {
   shieldTimer = 0;
   shieldCooldown = 0;
   gameOver = false;
+  resetClicks = 0;
   document.getElementById("gameStatus").innerText = "Gioco pronto! Schiva tutto!";
 }
 
