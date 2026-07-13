@@ -1,11 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>ERTAC Game - Dodge Masters TOUCH</title>
-    
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
     
     <style>
         * {
@@ -36,16 +35,20 @@
             text-shadow: 0 0 10px #00ff00;
         }
 
+        /* Forza il contenitore ad avere una dimensione fissa così lo schermo DEVE apparire */
         #p5-container {
             display: flex;
             justify-content: center;
             align-items: center;
             margin: 10px 0;
+            min-width: 400px;
+            min-height: 450px;
+            background: #000000; /* Sfondo nero di sicurezza */
+            border: 3px solid #00ff00;
+            box-shadow: 0 0 20px #00ff00;
         }
 
         canvas {
-            border: 3px solid #00ff00;
-            box-shadow: 0 0 20px #00ff00;
             max-width: 100vw;
             max-height: 50vh;
         }
@@ -126,6 +129,7 @@
         <button class="button-touch wide" ontouchstart="moveDown()" ontouchend="stopMove()">⬇️ GIU</button>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
     <script src="./sketch.js"></script>
 </body>
 </html>
