@@ -456,48 +456,42 @@ function drawMenuButton(y, stringa, attivo) {
 }
 
 function mousePressed() {
-    // AREA DI TOCCO ULTRA DEFINITA: Solo l'esatto quadratino dell'ingranaggio in alto a destra (X tra 565 e 600, Y tra 0 e 40)
-    if (mouseX > CANVAS_WIDTH - 35 && mouseX < CANVAS_WIDTH && mouseY > 0 && mouseY < 40) {
-        if (!ownerMenuOpen) {
-            let pass = prompt("Inserisci Password Proprietario:");
-            if (pass === OWNER_PASSWORD) {
-                ownerMenuOpen = true;
-            } else if (pass !== null) {
-                alert("Password Errata!");
-            }
-        } else {
-            ownerMenuOpen = false;
-        }
-        return;
-    }
-
+    // 1. SE IL MENU È APERTO: gestiamo SOLO ed ESCLUSIVAMENTE i tasti all'interno
     if (ownerMenuOpen) {
+        // Tasto Rosso Chiudi e Blocca
         if (mouseX > CANVAS_WIDTH / 2 - 100 && mouseX < CANVAS_WIDTH / 2 + 100 && mouseY > 440 && mouseY < 480) {
             ownerMenuOpen = false;
         }
+        // Tasto God Mode
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 75 && mouseY < 110) {
             ownerGodMode = !ownerGodMode;
         }
+        // Tasto Super Velocità
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 125 && mouseY < 160) {
             ownerSuperSpeed = !ownerSuperSpeed;
         }
+        // Tasto Magnete PowerUp
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 175 && mouseY < 210) {
             ownerMagnetMode = !ownerMagnetMode;
         }
+        // Tasto Abilita/Disabilita Combo
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 225 && mouseY < 260) {
             comboCheatsEnabled = !comboCheatsEnabled;
         }
+        // Tasto One-Hit Clear
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 285 && mouseY < 320) {
             enemies = [];
             ownerMenuOpen = false;
         }
+        // Tasto Attiva Trappola
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 335 && mouseY < 370) {
             if (gameActive) {
                 cheatActivated = true;
-                activateTrap();
+                activateTrap;
             }
             ownerMenuOpen = false;
         }
+        // Tasto Cambia Password
         if (mouseX > 50 && mouseX < CANVAS_WIDTH - 50 && mouseY > 385 && mouseY < 420) {
             let newPass = prompt("Inserisci la nuova Password Owner:");
             if (newPass !== null && newPass.trim() !== "") {
@@ -507,6 +501,20 @@ function mousePressed() {
                 alert("Password non valida.");
             }
         }
+        
+        // BLOCCANTE: Impedisce che cliccando su aree vuote o sull'ingranaggio il menu si chiuda
+        return; 
+    }
+
+    // 2. SE IL MENU È CHIUSO: l'unico modo per aprirlo è l'ingranaggio (click singolo)
+    if (mouseX > CANVAS_WIDTH - 35 && mouseX < CANVAS_WIDTH && mouseY > 0 && mouseY < 40) {
+        let pass = prompt("Inserisci Password Proprietario:");
+        if (pass === OWNER_PASSWORD) {
+            ownerMenuOpen = true;
+        } else if (pass !== null) {
+            alert("Password Errata!");
+        }
+        return;
     }
 }
 
@@ -658,4 +666,4 @@ function updateStatus(text) {
 
 document.addEventListener('touchmove', function(e) {
     e.preventDefault();
-}, { passive: false });
+}, { passive: f
